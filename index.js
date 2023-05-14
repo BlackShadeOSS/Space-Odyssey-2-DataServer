@@ -14,6 +14,7 @@ const connection = mysql.createConnection({
     user: "root",
     password: "",
     multipleStatements: true, // Allow multiple statements in one query
+    port: 3636,
 });
 
 connection.connect((err) => {
