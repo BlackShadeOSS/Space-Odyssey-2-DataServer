@@ -11,9 +11,9 @@ app.use(cors());
 // Database connection
 const connection = mysql.createConnection({
     host: "localhost",
-    user: "spaceodyssey",
-    password: "spaceiscool",
-    database: "spaceodyssey",
+    user: "root",
+    password: "",
+    multipleStatements: true, // Allow multiple statements in one query
 });
 
 connection.connect((err) => {
@@ -21,6 +21,16 @@ connection.connect((err) => {
         console.error("Error connecting to database", err);
     } else {
         console.log("Connected to database");
+        connection.query(
+            "CREATE DATABASE IF NOT EXISTS spaceodyssey; USE spaceodyssey; CREATE TABLE IF NOT EXISTS game_data (id INT AUTO_INCREMENT PRIMARY KEY, nickname VARCHAR(255) NOT NULL, level INT NOT NULL, time INT NOT NULL);",
+            (err, result) => {
+                if (err) {
+                    console.error("Error creating database or table", err);
+                } else {
+                    console.log("Database and table created successfully");
+                }
+            }
+        );
     }
 });
 
@@ -45,6 +55,21 @@ app.post("/game_data", (req, res) => {
             }
         });
     }
+});
+
+// Route for getting game data
+app.get("/game_data", (req, res) => {
+    const sql = "SELECT * FROM game_data ORDER BY level DESC, time ASC";
+
+    connection.query(sql, (err, result) => {
+        if (err) {
+            console.error("Error getting data", err);
+            res.status(500).json({ message: "Error getting data" });
+        } else {
+            console.log("Data retrieved successfully");
+            res.status(200).json(result);
+        }
+    });
 });
 
 // Start server
