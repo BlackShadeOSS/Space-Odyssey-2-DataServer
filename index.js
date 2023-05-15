@@ -14,7 +14,6 @@ const connection = mysql.createConnection({
     user: "root",
     password: "",
     multipleStatements: true, // Allow multiple statements in one query
-    port: 3636,
 });
 
 connection.connect((err) => {
@@ -71,6 +70,28 @@ app.get("/game_data", (req, res) => {
             res.status(200).json(result);
         }
     });
+});
+
+// Route for getting profile data
+app.get("/profile_data", (req, res) => {
+    const { nickname } = req.query;
+
+    if (!nickname) {
+        res.status(400).json({ message: "Missing required data" });
+    } else {
+        const sql = "SELECT * FROM game_data WHERE nickname = ?";
+        const values = [nickname];
+
+        connection.query(sql, values, (err, result) => {
+            if (err) {
+                console.error("Error getting data", err);
+                res.status(500).json({ message: "Error getting data" });
+            } else {
+                console.log("Data retrieved successfully");
+                res.status(200).json(result);
+            }
+        });
+    }
 });
 
 // Start server
