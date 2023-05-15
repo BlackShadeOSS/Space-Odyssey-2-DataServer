@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql");
+const MongoClient = require("mongodb").MongoClient;
 
 const app = express();
 
@@ -9,88 +9,73 @@ app.use(express.json());
 app.use(cors());
 
 // Database connection
-const connection = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
-    multipleStatements: true, // Allow multiple statements in one query
-});
+const uri =
+    "mongodb+srv://diaxsio10:UMSbTIwKPYQkhHl8@spaceodyssey2dataserver.pf76ybo.mongodb.net/?retryWrites=true&w=majority";
+let db;
 
-connection.connect((err) => {
-    if (err) {
-        console.error("Error connecting to database", err);
-    } else {
-        console.log("Connected to database");
-        connection.query(
-            "CREATE DATABASE IF NOT EXISTS spaceodyssey; USE spaceodyssey; CREATE TABLE IF NOT EXISTS game_data (id INT AUTO_INCREMENT PRIMARY KEY, nickname VARCHAR(255) NOT NULL, level INT NOT NULL, time INT NOT NULL);",
-            (err, result) => {
-                if (err) {
-                    console.error("Error creating database or table", err);
-                } else {
-                    console.log("Database and table created successfully");
-                }
-            }
-        );
-    }
-});
+// Initialize connection once
+(async () => {
+    const client = await MongoClient.connect(uri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    });
+    db = client.db("spaceodyssey");
+})();
 
 // Route for inserting game data
-app.post("/game_data", (req, res) => {
+app.post("/game_data", async (req, res) => {
     const { nickname, level, time } = req.body;
 
     if (!nickname || !level || !time) {
         res.status(400).json({ message: "Missing required data" });
     } else {
-        const sql =
-            "INSERT INTO game_data (nickname, level, time) VALUES (?, ?, ?)";
-        const values = [nickname, level, time];
-
-        connection.query(sql, values, (err, result) => {
-            if (err) {
-                console.error("Error inserting data", err);
-                res.status(500).json({ message: "Error inserting data" });
-            } else {
-                console.log("Data inserted successfully");
-                res.status(200).json({ message: "Data inserted successfully" });
-            }
-        });
+        try {
+            await db
+                .collection("game_data")
+                .insertOne({ nickname, level, time });
+            console.log("Data inserted successfully");
+            res.status(200).json({ message: "Data inserted successfully" });
+        } catch (err) {
+            console.error("Error inserting data", err);
+            res.status(500).json({ message: "Error inserting data" });
+        }
     }
 });
 
 // Route for getting game data
-app.get("/game_data", (req, res) => {
-    const sql = "SELECT * FROM game_data ORDER BY level DESC, time ASC";
-
-    connection.query(sql, (err, result) => {
-        if (err) {
-            console.error("Error getting data", err);
-            res.status(500).json({ message: "Error getting data" });
-        } else {
-            console.log("Data retrieved successfully");
-            res.status(200).json(result);
-        }
-    });
+app.get("/game_data", async (req, res) => {
+    try {
+        const result = await db
+            .collection("game_data")
+            .find()
+            .sort({ level: -1, time: 1 })
+            .toArray();
+        console.log("Data retrieved successfully");
+        res.status(200).json(result);
+    } catch (err) {
+        console.error("Error getting data", err);
+        res.status(500).json({ message: "Error getting data" });
+    }
 });
 
 // Route for getting profile data
-app.get("/profile_data", (req, res) => {
+app.get("/profile_data", async (req, res) => {
     const { nickname } = req.query;
 
     if (!nickname) {
         res.status(400).json({ message: "Missing required data" });
     } else {
-        const sql = "SELECT * FROM game_data WHERE nickname = ?";
-        const values = [nickname];
-
-        connection.query(sql, values, (err, result) => {
-            if (err) {
-                console.error("Error getting data", err);
-                res.status(500).json({ message: "Error getting data" });
-            } else {
-                console.log("Data retrieved successfully");
-                res.status(200).json(result);
-            }
-        });
+        try {
+            const result = await db
+                .collection("game_data")
+                .find({ nickname })
+                .toArray();
+            console.log("Data retrieved successfully");
+            res.status(200).json(result);
+        } catch (err) {
+            console.error("Error getting data", err);
+            res.status(500).json({ message: "Error getting data" });
+        }
     }
 });
 
