@@ -10,8 +10,7 @@ app.use(express.json());
 app.use(cors());
 
 // Database connection
-const uri =
-    "mongodb+srv://diaxsio10:UMSbTIwKPYQkhHl8@spaceodyssey2dataserver.pf76ybo.mongodb.net/?retryWrites=true&w=majority";
+const uri = "";
 let db;
 
 // Initialize connection once
